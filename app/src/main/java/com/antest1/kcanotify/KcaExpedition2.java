@@ -4,6 +4,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
+import static android.text.TextUtils.concat;
 import static com.antest1.kcanotify.KcaAlarmService.ALARM_DELAY;
 import static com.antest1.kcanotify.KcaUtils.getTimeStr;
 
@@ -75,7 +76,8 @@ public class KcaExpedition2 {
         else {
             int left_time = (int) (complete_time_check[idx] - System.currentTimeMillis() - ALARM_DELAY) / 1000;
             if (left_time < 0) return "";
-            return String.format("[%02d] %s", mission_no[idx], getTimeStr(left_time));
+            String mission_no_head = getExpeditionHeader(mission_no[idx]);
+            return mission_no_head.concat(getTimeStr(left_time));
         }
     }
 
@@ -84,7 +86,9 @@ public class KcaExpedition2 {
         else {
             long arrive_time = complete_time_check[idx] - ALARM_DELAY;
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-            return String.format("[%02d] %s", mission_no[idx], sdf.format(new Date(arrive_time)));
+
+            String mission_no_head = getExpeditionHeader(mission_no[idx]);
+            return mission_no_head.concat(sdf.format(new Date(arrive_time)));
         }
     }
 
@@ -94,5 +98,28 @@ public class KcaExpedition2 {
         } else {
             return getLeftTimeStr(idx);
         }
+    }
+
+    public static String getExpeditionStr(int mission_no_value) {
+        String mission_no_str = "";
+        if (mission_no_value >= 100) {
+            if ( mission_no_value < 110) mission_no_str = String.format("A%d", (mission_no_value + 1) % 100);
+            else if (mission_no_value % 2 == 1) mission_no_str = "E1";
+            else mission_no_str = "E2";
+        } else {
+            mission_no_str = String.valueOf(mission_no_value);
+        }
+        return mission_no_str;
+    }
+
+    public static String getExpeditionHeader(int mission_no) {
+        String mission_no_head = "";
+        String mission_no_value = getExpeditionStr(mission_no);
+        if (mission_no_value.contains("A") || mission_no_value.contains("E")) {
+            mission_no_head = "[".concat(mission_no_value).concat("] ");
+        } else {
+            mission_no_head = String.format("[%02d] ", mission_no);
+        }
+        return mission_no_head;
     }
 }

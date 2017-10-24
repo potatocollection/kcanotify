@@ -320,7 +320,7 @@ public class KcaApiData {
     }
 
     public static boolean getReturnFlag(int mission_no) {
-        return !(mission_no == 33 || mission_no == 34 || mission_no > 100);
+        return !(mission_no == 33 || mission_no == 34 || mission_no > 130);
     }
 
     public static String getShipTranslation(String jp_name, boolean abbr) {
@@ -635,7 +635,7 @@ public class KcaApiData {
 
     public static JsonObject getExpeditionInfo(int mission_no, String locale) {
         int mission_key = mission_no;
-        if (mission_no >= 100) {
+        if (mission_no >= 130) {
             if (mission_no % 2 == 1) mission_key = 133;
             else mission_key = 134;
         }
@@ -652,7 +652,7 @@ public class KcaApiData {
 
     public static String getExpeditionName(int mission_no, String locale) {
         int mission_key = mission_no;
-        if (mission_no >= 100) {
+        if (mission_no >= 130) {
             if (mission_no % 2 == 1) mission_key = 133;
             else mission_key = 134;
         }
