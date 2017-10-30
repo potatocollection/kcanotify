@@ -31,17 +31,18 @@ public final class KcaConstants {
     public static final String ERROR_TYPE_BATTLE = "B";
     public static final String ERROR_TYPE_BATTLEVIEW = "BV";
     public static final String ERROR_TYPE_QUESTVIEW = "Q";
+    public static final String ERROR_TYPE_QUESTTRACK = "QT";
     public static final String ERROR_TYPE_FLEETVIEW = "F";
     public static final String ERROR_TYPE_NOTI = "N";
     public static final String ERROR_TYPE_VPN = "V";
     public static final String ERROR_TYPE_OPENDB = "O";
     public static final String ERROR_TYPE_DB = "D";
 
-    public static final int FAIRY_TOTAL_COUNT = 152;
+    public static final int FAIRY_TOTAL_COUNT = 162;
     public static final int[] FAIRY_REVERSE_LIST = {0, 1, 2, 8, 9, 11, 12, 15, 19, 23, 24, 25, 27, 28, 30, 32, 33, 34,
             35, 36, 40, 42, 44, 45, 47, 49, 50, 51, 59, 60, 62, 63, 64, 73, 78, 79, 80, 81, 82, 84, 85, 88, 92, 93, 95, 98, 99,
             104, 105, 106, 107, 108, 109, 110, 111, 112, 117, 121, 122, 126, 127, 128, 129, 132, 134, 138, 140, 142, 143,
-            145, 146, 147, 148};
+            145, 146, 147, 148, 152, 153, 156, 157, 160};
 
     public static final String API_PORT = "/api_port/port";
     public static final String API_WORLD_GET_ID = "/api_world/get_id";
@@ -192,6 +193,7 @@ public final class KcaConstants {
     public static final String KCA_API_NOTI_GOBACKPORT = "/kca_api/noti_gobackport";
     public static final String KCA_API_NOTI_BATTLE_DROPINFO = "/kca_api/noti_battle_dropinfo";
     public static final String KCA_API_NOTI_DOCK_FIN = "/kca_api/noti_dock_fin";
+    public static final String KCA_API_NOTI_QUEST_STAT = "/kca_api/noti_quest_stat";
     public static final String KCA_API_PREF_CN_CHANGED = "/kca_api/pref_cn_changed";
     public static final String KCA_API_PREF_EXPVIEW_CHANGED = "/kca_api/pref_expview_changed";
     public static final String KCA_API_PREF_FAIRY_CHANGED = "/kca_api/pref_fairy_changed";
@@ -204,6 +206,8 @@ public final class KcaConstants {
     public static final String KCA_MSG_BATTLE_INFO = "com.antest1.kcanotify.KcaService.KCA_MSG_BATTLE_INFO";
     public static final String KCA_MSG_BATTLE_HDMG = "com.antest1.kcanotify.KcaService.KCA_MSG_BATTLE_HDMG";
     public static final String KCA_MSG_QUEST_LIST = "com.antest1.kcanotify.KcaService.KCA_MSG_QUEST_LIST";
+    public static final String KCA_MSG_QUEST_COMPLETE = "com.antest1.kcanotify.KcaViewButtonService.KCA_MSG_QUEST_COMPLETE";
+
     public static final String KCA_MSG_BATTLE_VIEW_REFRESH = "com.antest1.kcanotify.KcaService.KCA_MSG_BATTLE_VIEW_REFRESH";
     public static final String KCA_MSG_BATTLE_VIEW_HDMG = "com.antest1.kcanotify.KcaService.KCA_MSG_BATTLE_VIEW_HDMG";
     public static final String KCA_MSG_QUEST_VIEW_LIST = "com.antest1.kcanotify.KcaService.KCA_MSG_QUEST_VIEW_LIST";
@@ -328,6 +332,7 @@ public final class KcaConstants {
     public static final String PREF_KCA_DATA_VERSION = "kca_data_version";
     public static final String PREF_FAIRY_NOTI_LONGCLICK = "notify_fairy_longclick";
     public static final String PREF_DISABLE_CUSTOMTOAST = "disable_customtoast";
+    public static final String PREF_KCA_NOTI_MOVETOAPPINFO = "noti_movetoappinfo";
 
     public static final String[] PREF_ARRAY = {
             PREF_CHECK_UPDATE,
@@ -358,7 +363,9 @@ public final class KcaConstants {
             PREF_VPN_BYPASS_ADDRESS,
             PREF_FULLMORALE_SETTING,
             PREF_KCA_DATA_VERSION,
-            PREF_FAIRY_NOTI_LONGCLICK
+            PREF_FAIRY_NOTI_LONGCLICK,
+            PREF_DISABLE_CUSTOMTOAST,
+            PREF_KCA_NOTI_MOVETOAPPINFO
     };
 
     public static final List<String> PREFS_LIST = Arrays.asList(PREF_ARRAY);

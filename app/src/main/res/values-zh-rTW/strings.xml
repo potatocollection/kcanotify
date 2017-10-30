@@ -13,7 +13,7 @@ https://github.com/antest1/kcanotify/blob/master/app/src/main/res/values/strings
     <string name="app_name">Kcanotify</string>
     <string name="action_settings">設定</string>
     <string name="backpress_msg">再按一次後退鍵退出應用程序</string>
-
+    <string name="notification_appinfo_title">Kcanotify通知</string>
     <string name="accessibility_service_description">This permission allows kcanotify to detect whether kancolle is on the screen.\nIt only check whether kancolle is on the screen or not.\nYou can disallow this permission and hide the fairy manually by touching it long time.</string>
 
     <!-- Common Text -->
@@ -138,6 +138,8 @@ https://github.com/antest1/kcanotify/blob/master/app/src/main/res/values/strings
 
     <!-- Setting Strings -->
     <string name="setting_menu_kand_head">Kcanotify設定</string>
+    <string name="setting_menu_noti_title_movetoappinfo">移動到應用程序信息</string>
+    <string name="setting_menu_noti_desc_movetoappinfo">Android 8.0+</string>
     <string name="setting_menu_kand_title_language">語言設定</string>
     <string name="setting_menu_kand_title_saku_cal">選擇索敵公式</string>
     <string name="setting_menu_kand_title_opendb">向OpenDB傳送遊戲數據</string>
@@ -362,11 +364,17 @@ https://github.com/antest1/kcanotify/blob/master/app/src/main/res/values/strings
     <string name="excheckview_flag_info">旗艦</string>
     <string name="excheckview_total_info">編成</string>
     <string name="excheckview_drum_info">運輸桶</string>
+    <string name="excheckview_asw_info">對潛</string>
+    <string name="excheckview_los_info">索敵</string>
     <string name="excheckview_flag_lv_format" formatted="false">等級：%d+</string>
     <string name="excheckview_total_num_format" formatted="false">最低數：%d</string>
     <string name="excheckview_total_lv_format" formatted="false">總等級：%d+</string>
     <string name="excheckview_drum_ship_format" formatted="false">至少%d個艦娘</string>
     <string name="excheckview_drum_num_format" formatted="false">%d個以上</string>
+    <string name="excheckview_total_asw_format" formatted="false">總合：%d＋</string>
+    <string name="excheckview_total_los_format" formatted="false">總合：%d＋</string>
+    <string name="excheckview_bonus_asw" formatted="false">對潛：%d</string>
+    <string name="excheckview_bonus_los" formatted="false">索敵：%d</string>
     <string name="excheckview_bonus_kinu">鬼怒改二</string>
     <string name="excheckview_bonus_drum" formatted="false">運輸桶：%d</string>
     <string name="excheckview_bonus_dlc" formatted="false">大發：%d</string>

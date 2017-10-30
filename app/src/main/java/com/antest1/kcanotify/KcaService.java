@@ -64,6 +64,7 @@ import static com.antest1.kcanotify.KcaApiData.T2_GUN_LARGE;
 import static com.antest1.kcanotify.KcaApiData.T2_GUN_LARGE_II;
 import static com.antest1.kcanotify.KcaApiData.T2_MACHINE_GUN;
 import static com.antest1.kcanotify.KcaApiData.checkDataLoadTriggered;
+import static com.antest1.kcanotify.KcaApiData.getExpeditionNoByName;
 import static com.antest1.kcanotify.KcaApiData.getNodeColor;
 import static com.antest1.kcanotify.KcaApiData.getReturnFlag;
 import static com.antest1.kcanotify.KcaApiData.getUserItemStatusById;
@@ -584,6 +585,7 @@ public class KcaService extends Service {
                     startService(new Intent(this, KcaViewButtonService.class));
                     startService(new Intent(this, KcaQuestViewService.class));
                     startService(new Intent(this, KcaAkashiViewService.class));
+                    sendQuestCompletionInfo();
                 }
                 return;
                 //Toast.makeText(contextWithLocale, getPreferences("kca_version") + " " + String.valueOf(api_start2_down_mode), Toast.LENGTH_LONG).show();
@@ -611,7 +613,6 @@ public class KcaService extends Service {
                         setPreferences(getApplicationContext(), "kca_version", kca_version);
                     }
                 }
-                return;
             }
 
             if (url.startsWith(API_GET_MEMBER_REQUIRED_INFO)) {
@@ -635,7 +636,6 @@ public class KcaService extends Service {
                     }
                     */
                 }
-                return;
             }
 
             if (url.startsWith(API_GET_MEMBER_USEITEM)) {
@@ -650,7 +650,6 @@ public class KcaService extends Service {
                     dbHelper.putValue(DB_KEY_DECKPORT, jsonDataObj.getAsJsonArray("api_data").toString());
                     processExpeditionInfo();
                 }
-                return;
             }
 
             if (url.startsWith(API_REQ_MISSION_RESULT)) {
@@ -675,18 +674,35 @@ public class KcaService extends Service {
                         questTracker.updateIdCountTracker("404");
 
                         String api_name = api_data.get("api_quest_name").getAsString();
-                        if (api_name.equals("\u8b66\u5099\u4efb\u52d9")) { // 경계임무 (3)
-                            questTracker.updateIdCountTracker("426", 0);
-                        } else if (api_name.equals("\u5bfe\u6f5c\u8b66\u6212\u4efb\u52d9")) { // 대잠경계임무 (4)
-                            questTracker.updateIdCountTracker("426", 1);
-                        } else if (api_name.equals("\u6d77\u4e0a\u8b77\u885b\u4efb\u52d9")) { // 해상호위 (5)
-                            questTracker.updateIdCountTracker("424");
-                            questTracker.updateIdCountTracker("426", 2);
-                        } else if (api_name.equals("\u5f37\u884c\u5075\u5bdf\u4efb\u52d9")) { // 강행정찰임무 (10)
-                            questTracker.updateIdCountTracker("426", 3);
-                        } else if (api_name.contains("\u6771\u4eac\u6025\u884c")) { // 도쿄급행 (37, 38)
-                            questTracker.updateIdCountTracker("410");
-                            questTracker.updateIdCountTracker("411");
+                        int api_no = KcaApiData.getExpeditionNoByName(api_name);
+                        switch (api_no) {
+                            case 3: // 경계임무 (3)
+                                questTracker.updateIdCountTracker("426", 0);
+                                break;
+                            case 4: // 대잠경계임무 (4)
+                                questTracker.updateIdCountTracker("426", 1);
+                                questTracker.updateIdCountTracker("428", 0);
+                                break;
+                            case 5: // 해상호위 (5)
+                                questTracker.updateIdCountTracker("424");
+                                questTracker.updateIdCountTracker("426", 2);
+                                break;
+                            case 10: // 강행정찰임무 (10)
+                                questTracker.updateIdCountTracker("426", 3);
+                                break;
+                            case 37: // 도쿄급행 (37, 38)
+                            case 38:
+                                questTracker.updateIdCountTracker("410");
+                                questTracker.updateIdCountTracker("411");
+                                break;
+                            case 101: // 해협경계 (A2)
+                                questTracker.updateIdCountTracker("428", 1);
+                                break;
+                            case 102: // 장시간대잠 (A3)
+                                questTracker.updateIdCountTracker("428", 2);
+                                break;
+                            default:
+                                break;
                         }
                         updateQuestView();
                     }
@@ -701,13 +717,11 @@ public class KcaService extends Service {
                     JsonArray api_data = jsonDataObj.getAsJsonArray("api_data");
                     processDockingInfo(api_data);
                 }
-                return;
             }
 
             if (url.startsWith(API_REQ_NYUKYO_START)) {
                 questTracker.updateIdCountTracker("503");
                 updateQuestView();
-                return;
             }
 
             if (url.startsWith(API_REQ_NYUKYO_SPEEDCHAGNE)) {
@@ -721,13 +735,11 @@ public class KcaService extends Service {
                     }
                 }
                 if (ndock_id != -1) processDockingSpeedup(ndock_id);
-                return;
             }
 
             if (url.startsWith(API_REQ_HOKYU_CHARGE)) {
                 questTracker.updateIdCountTracker("504");
                 updateQuestView();
-                return;
             }
 
             if (url.startsWith(API_PORT)) {
@@ -1081,13 +1093,19 @@ public class KcaService extends Service {
                         JsonObject reqGetMemberDeckApiData = jsonDataObj.getAsJsonObject("api_data");
                         cancelExpeditionInfo(reqGetMemberDeckApiData);
                     }
-                    return;
                 }
 
                 if (url.startsWith(API_REQ_MEMBER_GET_PRACTICE_ENEMYINFO)) {
                     if (jsonDataObj.has("api_data")) {
                         JsonObject api_data = jsonDataObj.getAsJsonObject("api_data");
                         KcaBattle.currentEnemyDeckName = api_data.get("api_deckname").getAsString();
+                    }
+                }
+
+                if (url.startsWith(API_REQ_HOKYU_CHARGE)) {
+                    if (jsonDataObj.has("api_data")) {
+                        JsonObject api_data = jsonDataObj.getAsJsonObject("api_data");
+                        KcaApiData.updateSuppliedUserShip(api_data.getAsJsonArray("api_ship"));
                     }
                 }
 
@@ -1531,7 +1549,7 @@ public class KcaService extends Service {
                     }
                 }
             }
-
+            sendQuestCompletionInfo();
             if (url.equals(KCA_API_VPN_DATA_ERROR)) { // VPN Data Dump Send
                 String api_url = jsonDataObj.get("uri").getAsString();
                 String api_request = jsonDataObj.get("request").getAsString();
@@ -1555,7 +1573,6 @@ public class KcaService extends Service {
                 showCustomToast(customToast, getStringWithLocale(R.string.service_failed_msg), Toast.LENGTH_SHORT, ContextCompat.getColor(getApplicationContext(), R.color.colorPrimaryDark));
                 dbHelper.recordErrorLog(ERROR_TYPE_VPN, api_url, api_request, api_response, api_error);
             }
-
         } catch (JsonSyntaxException e) {
             //Log.e("KCA", "ParseError");
             //Log.e("KCA", data);
@@ -1585,7 +1602,6 @@ public class KcaService extends Service {
             dbHelper.recordErrorLog(ERROR_TYPE_SERVICE, url, api_request, process_data, getStringFromException(e));
         }
     }
-
 
     private static class kcaNotificationHandler extends Handler {
         private final WeakReference<KcaService> mService;
@@ -1790,6 +1806,8 @@ public class KcaService extends Service {
                 showCustomToast(customToast, getStringWithLocale(R.string.process_battle_failed_msg), Toast.LENGTH_SHORT, ContextCompat.getColor(this, R.color.colorPrimaryDark));
                 dbHelper.recordErrorLog(ERROR_TYPE_BATTLE, api_url, api_node, api_data, api_error);
             }
+
+            sendQuestCompletionInfo();
         } catch (JsonSyntaxException e) {
             e.printStackTrace();
             makeText(getApplicationContext(), data, Toast.LENGTH_LONG).show();
@@ -1800,6 +1818,14 @@ public class KcaService extends Service {
         }
     }
 
+    private void sendQuestCompletionInfo() {
+        boolean quest_completed_exist = questTracker.check_quest_completed(dbHelper);
+        Intent intent = new Intent(KCA_MSG_QUEST_COMPLETE);
+        String response = "0";
+        if (quest_completed_exist) response = "1";
+        intent.putExtra(KCA_MSG_DATA, response);
+        broadcaster.sendBroadcast(intent);
+    }
 
     private int getSeekCn() {
         return Integer.valueOf(getStringPreferences(getApplicationContext(), PREF_KCA_SEEK_CN));

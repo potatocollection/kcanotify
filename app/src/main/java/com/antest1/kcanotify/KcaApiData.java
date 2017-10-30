@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.content.IntentCompat;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -190,7 +191,9 @@ public class KcaApiData {
         return dataLoadTriggered;
     }
 
-    public static boolean checkUserShipDataLoaded() { return userShipData != null && userShipData.size() > 0; }
+    public static boolean checkUserShipDataLoaded() {
+        return userShipData != null && userShipData.size() > 0;
+    }
 
     public static void setDataLoadTriggered() {
         dataLoadTriggered = true;
@@ -320,7 +323,7 @@ public class KcaApiData {
     }
 
     public static boolean getReturnFlag(int mission_no) {
-        return !(mission_no == 33 || mission_no == 34 || mission_no > 130);
+        return !(mission_no == 33 || mission_no == 34 || (mission_no > 130));
     }
 
     public static String getShipTranslation(String jp_name, boolean abbr) {
@@ -370,7 +373,7 @@ public class KcaApiData {
     }
 
     public static String getUseitemTranslation(int id) {
-        if(kcUseitemData.containsKey(id)) {
+        if (kcUseitemData.containsKey(id)) {
             JsonObject data = kcUseitemData.get(id).getAsJsonObject();
             return getItemTranslation(data.get("api_name").getAsString());
         } else {
@@ -379,7 +382,7 @@ public class KcaApiData {
     }
 
     public static String getShipTypeAbbr(int idx) {
-        if(kcStypeData != null && idx < kcStypeData.size() ) {
+        if (kcStypeData != null && idx < kcStypeData.size()) {
             return kcStypeData.get(idx).getAsString();
         } else {
             return "";
@@ -588,12 +591,13 @@ public class KcaApiData {
     public static int getUseitemCount(int id) {
         JsonArray kcUseitemData = helper.getJsonArrayValue(DB_KEY_USEITEMS);
         if (kcUseitemData != null) {
-            for (int i = 0; i< kcUseitemData.size(); i++) {
+            for (int i = 0; i < kcUseitemData.size(); i++) {
                 JsonObject data = kcUseitemData.get(i).getAsJsonObject();
                 if (data.get("api_id").getAsInt() == id) {
                     return data.get("api_count").getAsInt();
                 }
             }
+            return 0;
         }
         return -1;
     }
@@ -601,7 +605,7 @@ public class KcaApiData {
     public static void addUseitemCount(int id) {
         JsonArray kcUseitemData = helper.getJsonArrayValue(DB_KEY_USEITEMS);
         if (kcUseitemData != null) {
-            for (int i = 0; i< kcUseitemData.size(); i++) {
+            for (int i = 0; i < kcUseitemData.size(); i++) {
                 JsonObject data = kcUseitemData.get(i).getAsJsonObject();
                 if (data.get("api_id").getAsInt() == id) {
                     int orig = data.get("api_count").getAsInt();
@@ -610,6 +614,12 @@ public class KcaApiData {
                     return;
                 }
             }
+            // if not exist, add new item
+            JsonObject data = new JsonObject();
+            data.addProperty("api_id", id);
+            data.addProperty("api_count", 1);
+            kcUseitemData.add(data);
+            helper.putValue(DB_KEY_USEITEMS, kcUseitemData.toString());
         }
     }
 
@@ -663,6 +673,18 @@ public class KcaApiData {
         } else {
             return name.get("en").getAsString();
         }
+    }
+
+    // warning: event support expedition will not work with this
+    public static int getExpeditionNoByName(String name) {
+        for(Map.Entry<String, JsonElement> v: kcExpeditionData.entrySet()) {
+            JsonObject data = v.getValue().getAsJsonObject();
+            String exp_name = data.getAsJsonObject("name").get("jp").getAsString();
+            if (exp_name.equals(name)) {
+                return Integer.parseInt(v.getKey());
+            }
+        }
+        return -1;
     }
 
     public static int getPortData(JsonObject api_data) {
@@ -812,8 +834,8 @@ public class KcaApiData {
     public static int countUserShipById(int ship_id) {
         int count = 0;
         if (userShipData == null || userShipData.size() == 0) return -1;
-        for (JsonObject ship: userShipData.values()) {
-            if(ship_id == ship.get("api_ship_id").getAsInt()) count += 1;
+        for (JsonObject ship : userShipData.values()) {
+            if (ship_id == ship.get("api_ship_id").getAsInt()) count += 1;
         }
         return count;
     }
@@ -897,6 +919,22 @@ public class KcaApiData {
             }
         }
     }
+
+    public static void updateSuppliedUserShip(JsonArray api_ship) {
+        if (kcGameData == null) return;
+        for (int i = 0; i < api_ship.size(); i++) {
+            JsonObject item = api_ship.get(i).getAsJsonObject();
+            if (item.has("api_id")) {
+                int shipId = item.get("api_id").getAsInt();
+                JsonObject data = userShipData.get(shipId);
+                data.addProperty("api_fuel", item.get("api_fuel").getAsInt());
+                data.addProperty("api_bull", item.get("api_bull").getAsInt());
+                data.add("api_onslot", item.get("api_onslot"));
+                userShipData.put(shipId, data);
+            }
+        }
+    }
+
 
     public static void updateUserShip(JsonObject api_data) {
         if (kcGameData == null) return;
