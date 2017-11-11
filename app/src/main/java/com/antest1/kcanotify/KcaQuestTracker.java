@@ -177,8 +177,8 @@ public class KcaQuestTracker extends SQLiteOpenHelper {
                 case 2: // Weekly
                     SimpleDateFormat dateFormat = new SimpleDateFormat("yy MM dd");
                     try {
-                        Date date1 = dateFormat.parse(String.format("%s %s %s", quest_time[0], quest_time[1], quest_time[2]));
-                        Date date2 = dateFormat.parse(String.format("%s %s %s", current_time[0], current_time[1], current_time[2]));
+                        Date date1 = dateFormat.parse(KcaUtils.format("%s %s %s", quest_time[0], quest_time[1], quest_time[2]));
+                        Date date2 = dateFormat.parse(KcaUtils.format("%s %s %s", current_time[0], current_time[1], current_time[2]));
                         long diff = date2.getTime() - date1.getTime();
                         long datediff = TimeUnit.DAYS.convert(diff, TimeUnit.MILLISECONDS);
                         if (datediff >= 7 && reset_passed) {
@@ -657,6 +657,24 @@ public class KcaQuestTracker extends SQLiteOpenHelper {
         return result;
     }
 
+    public String getQuestTrackerData() {
+        SQLiteDatabase db = this.getReadableDatabase();
+        StringBuilder sb = new StringBuilder();
+        Cursor c = db.query(qt_table_name, null, null, null, null, null, null);
+        while (c.moveToNext()) {
+            String key = c.getString(c.getColumnIndex("KEY"));
+            String active = c.getString(c.getColumnIndex("ACTIVE"));
+            int cond0 = c.getInt(c.getColumnIndex("CND0"));
+            int cond1 = c.getInt(c.getColumnIndex("CND1"));
+            int cond2 = c.getInt(c.getColumnIndex("CND2"));
+            int cond3 = c.getInt(c.getColumnIndex("CND3"));
+            String time = c.getString(c.getColumnIndex("TIME"));
+            sb.append(KcaUtils.format("[%s] A:%s C:%02d,%02d,%02d,%02d T:%s\n", key, active, cond0, cond1, cond2, cond3, time));
+        }
+        c.close();
+        return sb.toString().trim();
+    }
+
     public void test() {
         SQLiteDatabase db = this.getReadableDatabase();
         int count = 0;
@@ -666,7 +684,7 @@ public class KcaQuestTracker extends SQLiteOpenHelper {
             String active = c.getString(c.getColumnIndex("ACTIVE"));
             String cond0 = c.getString(c.getColumnIndex("CND0"));
             String time = c.getString(c.getColumnIndex("TIME"));
-            Log.e("KCA-QT", String.format("%s -> %s %s %s", key, active, cond0, time));
+            Log.e("KCA-QT", KcaUtils.format("%s -> %s %s %s", key, active, cond0, time));
             count += 1;
         }
         Log.e("KCA-QT", "Total: " + String.valueOf(count));

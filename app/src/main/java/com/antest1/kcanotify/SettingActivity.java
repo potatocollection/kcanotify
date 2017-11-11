@@ -388,7 +388,7 @@ public class SettingActivity extends AppCompatActivity {
             final MediaType FORM_DATA = MediaType.parse("application/x-www-form-urlencoded");
             OkHttpClient client = new OkHttpClient.Builder().build();
 
-            String checkUrl = String.format(context.getString(R.string.kcanotify_checkversion_link));
+            String checkUrl = KcaUtils.format(context.getString(R.string.kcanotify_checkversion_link));
             Request.Builder builder = new Request.Builder().url(checkUrl).get();
             builder.addHeader("Referer", "app:/KCA/");
             builder.addHeader("Content-Type", "application/x-www-form-urlencoded");
@@ -423,20 +423,39 @@ public class SettingActivity extends AppCompatActivity {
                     if (compareVersion(currentVersion, recentVersion)) { // True if latest
                         if (toastflag) {
                             Toast.makeText(context,
-                                    String.format(getStringWithLocale(R.string.sa_checkupdate_latest), currentVersion),
+                                    KcaUtils.format(getStringWithLocale(R.string.sa_checkupdate_latest), currentVersion),
                                     Toast.LENGTH_LONG).show();
                         }
                     } else if (!activity.isFinishing()) {
                         AlertDialog.Builder alertDialog = new AlertDialog.Builder(activity);
-                        alertDialog.setMessage(String.format(getStringWithLocale(R.string.sa_checkupdate_hasupdate), recentVersion));
+                        alertDialog.setMessage(KcaUtils.format(getStringWithLocale(R.string.sa_checkupdate_hasupdate), recentVersion));
                         alertDialog.setPositiveButton(getStringWithLocale(R.string.dialog_ok),
                                 new DialogInterface.OnClickListener() {
                                     @Override
                                     public void onClick(DialogInterface dialog, int which) {
                                         String downloadUrl = getStringPreferences(context, PREF_APK_DOWNLOAD_SITE);
-                                        Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(downloadUrl));
-                                        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                                        context.startActivity(i);
+                                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(downloadUrl));
+                                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                        if (intent.resolveActivity(context.getPackageManager()) != null) {
+                                            context.startActivity(intent);
+                                        } else if (downloadUrl.contains(getStringWithLocale(R.string.app_download_link_playstore))) {
+                                            Toast.makeText(context, "Google Play Store not found", Toast.LENGTH_LONG).show();
+                                            AlertDialog.Builder apkDownloadPathDialog = new AlertDialog.Builder(activity);
+                                            apkDownloadPathDialog.setIcon(R.mipmap.ic_launcher);
+                                            apkDownloadPathDialog.setTitle(getStringWithLocale(R.string.setting_menu_app_title_down));
+                                            apkDownloadPathDialog.setCancelable(true);
+                                            apkDownloadPathDialog.setItems(R.array.downloadSiteOptionWithoutPlayStore, new DialogInterface.OnClickListener() {
+                                                @Override
+                                                public void onClick(DialogInterface dialogInterface, int i) {
+                                                    String[] path_value = context.getResources().getStringArray(R.array.downloadSiteOptionWithoutPlayStoreValue);
+                                                    KcaUtils.setPreferences(context, PREF_APK_DOWNLOAD_SITE, path_value[i]);
+                                                    Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(path_value[i]));
+                                                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                                    context.startActivity(intent);
+                                                }
+                                            });
+                                            apkDownloadPathDialog.show();
+                                        }
                                     }
                                 });
                         alertDialog.setNegativeButton(getStringWithLocale(R.string.dialog_cancel),
@@ -498,7 +517,7 @@ public class SettingActivity extends AppCompatActivity {
         }
 
         public String executeClient() {
-            String dataUrl = String.format(context.getString(R.string.api_start2_recent_version_link));
+            String dataUrl = KcaUtils.format(context.getString(R.string.api_start2_recent_version_link));
 
             OkHttpClient client = new OkHttpClient.Builder().build();
             Request.Builder builder = new Request.Builder().url(dataUrl).get();
@@ -545,7 +564,7 @@ public class SettingActivity extends AppCompatActivity {
                     case FAILURE:
                         if (error_msg == null) error_msg = "null";
                         Toast.makeText(context,
-                                String.format(getStringWithLocale(R.string.sa_getupdate_servererror), error_msg),
+                                KcaUtils.format(getStringWithLocale(R.string.sa_getupdate_servererror), error_msg),
                                 Toast.LENGTH_LONG).show();
                         break;
                     case ERROR:

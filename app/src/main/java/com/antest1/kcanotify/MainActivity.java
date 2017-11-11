@@ -8,7 +8,9 @@ import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonReader;
 
 import android.Manifest;
+import android.content.ActivityNotFoundException;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -44,6 +46,7 @@ import android.widget.ToggleButton;
 
 import org.sufficientlysecure.htmltextview.HtmlTextView;
 
+import java.io.Console;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
@@ -214,16 +217,34 @@ public class MainActivity extends AppCompatActivity {
         textWarn = findViewById(R.id.textMainWarn);
         textUpdate = findViewById(R.id.textMainUpdate);
         textDataUpdate = findViewById(R.id.textMainDataUpdate);
-
         textWarn.setVisibility(View.GONE);
         textUpdate.setVisibility(View.GONE);
         textUpdate.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 String downloadUrl = getStringPreferences(getApplicationContext(), PREF_APK_DOWNLOAD_SITE);
-                Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(downloadUrl));
-                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                startActivity(i);
+                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(downloadUrl));
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                if (intent.resolveActivity(getPackageManager()) != null) {
+                    startActivity(intent);
+                } else if (downloadUrl.contains(getString(R.string.app_download_link_playstore))) {
+                    Toast.makeText(getApplicationContext(), "Google Play Store not found", Toast.LENGTH_LONG).show();
+                    AlertDialog.Builder apkDownloadPathDialog = new AlertDialog.Builder(MainActivity.this);
+                    apkDownloadPathDialog.setIcon(R.mipmap.ic_launcher);
+                    apkDownloadPathDialog.setTitle(getStringWithLocale(R.string.setting_menu_app_title_down));
+                    apkDownloadPathDialog.setCancelable(true);
+                    apkDownloadPathDialog.setItems(R.array.downloadSiteOptionWithoutPlayStore, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
+                            String[] path_value = getResources().getStringArray(R.array.downloadSiteOptionWithoutPlayStoreValue);
+                            KcaUtils.setPreferences(getApplicationContext(), PREF_APK_DOWNLOAD_SITE, path_value[i]);
+                            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(path_value[i]));
+                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                            startActivity(intent);
+                        }
+                    });
+                    apkDownloadPathDialog.show();
+                }
             }
         });
         textDataUpdate.setVisibility(View.GONE);
@@ -356,6 +377,8 @@ public class MainActivity extends AppCompatActivity {
                         break;
                     case PREF_OPENDB_API_USE:
                     case PREF_AKASHI_STAR_CHECKED:
+                    case PREF_KCA_SET_PRIORITY:
+                    case PREF_DISABLE_CUSTOMTOAST:
                         editor.putBoolean(prefKey, false);
                         break;
                     case PREF_KCA_EXP_VIEW:
@@ -369,11 +392,8 @@ public class MainActivity extends AppCompatActivity {
                     case PREF_KCA_NOTI_V_NS:
                     case PREF_SHOWDROP_SETTING:
                     case PREF_FAIRY_NOTI_LONGCLICK:
+                    case PREF_KCA_NOTI_QUEST_FAIRY_GLOW:
                         editor.putBoolean(prefKey, true);
-                        break;
-                    case PREF_KCA_SET_PRIORITY:
-                    case PREF_DISABLE_CUSTOMTOAST:
-                        editor.putBoolean(prefKey, false);
                         break;
                     case PREF_KCA_LANGUAGE:
                         String localecode = getString(R.string.default_locale);
@@ -497,7 +517,7 @@ public class MainActivity extends AppCompatActivity {
             final MediaType FORM_DATA = MediaType.parse("application/x-www-form-urlencoded");
             OkHttpClient client = new OkHttpClient.Builder().build();
 
-            String checkUrl = String.format(getString(R.string.kcanotify_checkversion_link));
+            String checkUrl = KcaUtils.format(getString(R.string.kcanotify_checkversion_link));
             Request.Builder builder = new Request.Builder().url(checkUrl).get();
             builder.addHeader("Referer", "app:/KCA/");
             builder.addHeader("Content-Type", "application/x-www-form-urlencoded");
@@ -531,7 +551,7 @@ public class MainActivity extends AppCompatActivity {
                         String recentVersion = jsonDataObj.get("version").getAsString();
                         if (!compareVersion(currentVersion, recentVersion)) { // True if latest
                             textUpdate.setVisibility(View.VISIBLE);
-                            textUpdate.setText(String.format(getStringWithLocale(R.string.ma_hasupdate), recentVersion));
+                            textUpdate.setText(KcaUtils.format(getStringWithLocale(R.string.ma_hasupdate), recentVersion));
                             Intent aIntent = new Intent(getApplicationContext(), KcaAlarmService.class);
                             JsonObject data = new JsonObject();
                             data.addProperty("type", TYPE_UPDATE);
@@ -546,7 +566,7 @@ public class MainActivity extends AppCompatActivity {
                         String recentVersion = jsonDataObj.get("data_version").getAsString();
                         if (!compareVersion(currentDataVersion, recentVersion)) { // True if latest
                             textDataUpdate.setVisibility(View.VISIBLE);
-                            textDataUpdate.setText(String.format(getStringWithLocale(R.string.ma_hasdataupdate), recentVersion));
+                            textDataUpdate.setText(KcaUtils.format(getStringWithLocale(R.string.ma_hasdataupdate), recentVersion));
                             Intent aIntent = new Intent(getApplicationContext(), KcaAlarmService.class);
                             JsonObject data = new JsonObject();
                             data.addProperty("type", TYPE_UPDATE);
@@ -594,10 +614,10 @@ public class MainActivity extends AppCompatActivity {
         }
 
         public String executeClient() {
-            String dataUrl = String.format(getString(R.string.api_start2_recent_version_link));
+            String dataUrl = KcaUtils.format(getString(R.string.api_start2_recent_version_link));
             OkHttpClient client = new OkHttpClient.Builder().build();
 
-            String checkUrl = String.format(dataUrl);
+            String checkUrl = KcaUtils.format(dataUrl);
             Request.Builder builder = new Request.Builder().url(checkUrl).get();
             builder.addHeader("Referer", "app:/KCA/");
             builder.addHeader("Content-Type", "application/x-www-form-urlencoded");
@@ -642,7 +662,7 @@ public class MainActivity extends AppCompatActivity {
                 case FAILURE:
                     if (error_msg == null) error_msg = "null";
                     Toast.makeText(getApplicationContext(),
-                            String.format(getStringWithLocale(R.string.sa_getupdate_servererror), error_msg),
+                            KcaUtils.format(getStringWithLocale(R.string.sa_getupdate_servererror), error_msg),
                             Toast.LENGTH_LONG).show();
                     break;
                 case ERROR:

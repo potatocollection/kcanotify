@@ -15,6 +15,7 @@ import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.Point;
 import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
@@ -39,8 +40,10 @@ import com.google.gson.JsonObject;
 import java.util.Arrays;
 import java.util.Calendar;
 
+import static android.R.attr.orientation;
 import static com.antest1.kcanotify.KcaConstants.DB_KEY_BATTLEINFO;
 import static com.antest1.kcanotify.KcaConstants.DB_KEY_BATTLENODE;
+import static com.antest1.kcanotify.KcaConstants.DB_KEY_FAIRYLOC;
 import static com.antest1.kcanotify.KcaConstants.FAIRY_REVERSE_LIST;
 import static com.antest1.kcanotify.KcaConstants.KCANOTIFY_DB_VERSION;
 import static com.antest1.kcanotify.KcaConstants.KCA_MSG_BATTLE_HDMG;
@@ -52,9 +55,11 @@ import static com.antest1.kcanotify.KcaConstants.KCA_MSG_QUEST_COMPLETE;
 import static com.antest1.kcanotify.KcaConstants.PREF_FAIRY_ICON;
 import static com.antest1.kcanotify.KcaConstants.PREF_FAIRY_NOTI_LONGCLICK;
 import static com.antest1.kcanotify.KcaConstants.PREF_KCA_BATTLEVIEW_USE;
+import static com.antest1.kcanotify.KcaConstants.PREF_KCA_NOTI_QUEST_FAIRY_GLOW;
 import static com.antest1.kcanotify.KcaUtils.doVibrate;
 import static com.antest1.kcanotify.KcaUtils.getBooleanPreferences;
 import static com.antest1.kcanotify.KcaUtils.getId;
+import static com.antest1.kcanotify.KcaUtils.getOrientationPrefix;
 import static com.antest1.kcanotify.KcaUtils.getStringPreferences;
 import static com.antest1.kcanotify.KcaUtils.getWindowLayoutType;
 
@@ -100,9 +105,9 @@ public class KcaViewButtonService extends Service {
     public static int recentVisibility = View.VISIBLE;
     public static int type;
     public static int clickcount;
-    public static boolean taiha_status = false;
-    private static boolean fairy_glow_on = false;
-    private static boolean fairy_glow_mode = false;
+    public boolean taiha_status = false;
+    private boolean fairy_glow_on = false;
+    private boolean fairy_glow_mode = false;
 
     public static JsonObject getCurrentApiData() {
         return currentApiData;
@@ -129,7 +134,6 @@ public class KcaViewButtonService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
                 && !Settings.canDrawOverlays(getApplicationContext())) {
             // Can not draw overlays: pass
@@ -163,11 +167,10 @@ public class KcaViewButtonService extends Service {
                     String s = intent.getStringExtra(KCA_MSG_DATA);
                     if (s.contains("1")) {
                         taiha_status = true;
-                        ((ImageView) mView.findViewById(R.id.viewbutton)).getDrawable().setColorFilter(ContextCompat.getColor(getApplicationContext(),
-                                R.color.colorHeavyDmgStateWarn), PorterDuff.Mode.MULTIPLY);
                     } else {
-                        ((ImageView) mView.findViewById(R.id.viewbutton)).getDrawable().clearColorFilter();
+                        taiha_status = false;
                     }
+                    setFairyImage();
                     Log.e("KCA", "KCA_MSG_BATTLE_HDMG Received");
                 }
             };
@@ -177,16 +180,12 @@ public class KcaViewButtonService extends Service {
                     String s = intent.getStringExtra(KCA_MSG_DATA);
                     if (s.contains("1")) {
                         if (!fairy_glow_mode) {
-                            fairy_glow_on = true;
                             startFairyKira();
                         }
-                        fairy_glow_mode = true;
                     } else {
                         if (fairy_glow_mode) {
-                            fairy_glow_on = false;
                             stopFairyKira();
                         }
-                        fairy_glow_mode = false;
                     }
                     Log.e("KCA", "KCA_MSG_QUEST_COMPLETE Received");
                 }
@@ -206,7 +205,7 @@ public class KcaViewButtonService extends Service {
             String fairyPath = "noti_icon_".concat(fairyIdValue);
             viewBitmapId = getId(fairyPath, R.mipmap.class);
             viewBitmapSmallId = getId(fairyPath.concat("_small"), R.mipmap.class);
-            setFairyGlow();
+            setFairyImage();
 
             int index = Arrays.binarySearch(FAIRY_REVERSE_LIST, Integer.parseInt(fairyIdValue));
             if (index >= 0) viewbutton.setScaleX(-1.0f);
@@ -231,7 +230,7 @@ public class KcaViewButtonService extends Service {
             display.getSize(size);
             screenWidth = size.x;
             screenHeight = size.y;
-            Log.e("KCA", "w/h: "+String.valueOf(screenWidth) + " "  +String.valueOf(screenHeight));
+            Log.e("KCA", "w/h: " + String.valueOf(screenWidth) + " " + String.valueOf(screenHeight));
 
             mParams.y = screenHeight - buttonHeight;
             mManager = (WindowManager) getSystemService(WINDOW_SERVICE);
@@ -258,13 +257,13 @@ public class KcaViewButtonService extends Service {
                 if (mView != null) mView.setVisibility(View.GONE);
             }
             if (intent.getAction().equals(FAIRY_VISIBLE) || intent.getAction().equals(RETURN_FAIRY_ACTION)) {
-                if(mView != null) {
+                if (mView != null) {
                     mView.setVisibility(View.VISIBLE);
                     recentVisibility = View.VISIBLE;
                 }
             }
             if (intent.getAction().equals(FAIRY_INVISIBLE)) {
-                if(mView != null) {
+                if (mView != null) {
                     mView.setVisibility(View.GONE);
                     recentVisibility = View.GONE;
                 }
@@ -274,13 +273,14 @@ public class KcaViewButtonService extends Service {
                 String fairyPath = "noti_icon_".concat(fairyIdValue);
                 viewBitmapId = getId(fairyPath, R.mipmap.class);
                 viewBitmapSmallId = getId(fairyPath.concat("_small"), R.mipmap.class);
-                setFairyGlow();
+                setFairyImage();
                 int index = Arrays.binarySearch(FAIRY_REVERSE_LIST, Integer.parseInt(fairyIdValue));
                 if (index >= 0) viewbutton.setScaleX(-1.0f);
                 else viewbutton.setScaleX(1.0f);
             }
             if (intent.getAction().equals(RESET_FAIRY_STATUS_ACTION)) {
-                ((ImageView) mView.findViewById(R.id.viewbutton)).getDrawable().clearColorFilter();
+                taiha_status = false;
+                setFairyImage();
             }
             if (intent.getAction().equals(ACTIVATE_BATTLEVIEW_ACTION)) {
                 Intent qintent = new Intent(getBaseContext(), KcaFleetViewService.class);
@@ -310,29 +310,34 @@ public class KcaViewButtonService extends Service {
         return getBooleanPreferences(getApplicationContext(), PREF_KCA_BATTLEVIEW_USE);
     }
 
-    private void setFairyGlow() {
-        int margin = 14;
-        int halfMargin = margin / 2;
-        int glowRadius = 20;
-        int glowColor = Color.rgb(0, 192, 255);
-        int glowColor2 = Color.rgb(230, 249, 255);
+    private final int margin = 14;
+    private final int halfMargin = margin / 2;
+    private final int glowRadius = 20;
+    private final int glowColor = Color.rgb(0, 192, 255);
+    private final int glowColor2 = Color.rgb(230, 249, 255);
 
+    private void setFairyImage() {
+        boolean glow_available = fairy_glow_on && getBooleanPreferences(getApplicationContext(), PREF_KCA_NOTI_QUEST_FAIRY_GLOW);
         Bitmap src = BitmapFactory.decodeResource(getResources(), viewBitmapId);
         Bitmap alpha = src.extractAlpha();
         Bitmap bmp = Bitmap.createBitmap(src.getWidth() + margin,
                 src.getHeight() + margin, Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(bmp);
-        if (fairy_glow_on) {
-            Paint paint = new Paint();
-            paint.setColor(glowColor);
-            paint.setMaskFilter(new BlurMaskFilter(glowRadius, BlurMaskFilter.Blur.OUTER));
-            canvas.drawBitmap(alpha, halfMargin, halfMargin, paint);
+        if (glow_available) {
+            Paint glow_paint = new Paint();
+            glow_paint.setColor(glowColor);
+            glow_paint.setMaskFilter(new BlurMaskFilter(glowRadius, BlurMaskFilter.Blur.OUTER));
+            canvas.drawBitmap(alpha, halfMargin, halfMargin, glow_paint);
         }
-        canvas.drawBitmap(src, halfMargin, halfMargin, null);
+        Paint color_paint = new Paint();
+        if (taiha_status) {
+            color_paint.setColorFilter(new PorterDuffColorFilter(ContextCompat.getColor(getApplicationContext(),
+                    R.color.colorHeavyDmgStateWarn), PorterDuff.Mode.MULTIPLY));
+        } else if (glow_available) {
+            color_paint.setColorFilter(new PorterDuffColorFilter(glowColor2, PorterDuff.Mode.MULTIPLY));
+        }
+        canvas.drawBitmap(src, halfMargin, halfMargin, color_paint);
         viewbutton.setImageBitmap(bmp);
-        if(!taiha_status && fairy_glow_on) {
-            ((ImageView) mView.findViewById(R.id.viewbutton)).getDrawable().setColorFilter(glowColor2, PorterDuff.Mode.MULTIPLY);
-        }
     }
 
     @Override
@@ -341,7 +346,7 @@ public class KcaViewButtonService extends Service {
         LocalBroadcastManager.getInstance(this).unregisterReceiver(battlenode_receiver);
         LocalBroadcastManager.getInstance(this).unregisterReceiver(battlehdmg_receiver);
         LocalBroadcastManager.getInstance(this).unregisterReceiver(questcmpl_receiver);
-        if(mManager != null) mManager.removeView(mView);
+        if (mManager != null) mManager.removeView(mView);
         super.onDestroy();
     }
 
@@ -364,7 +369,7 @@ public class KcaViewButtonService extends Service {
                         mTouchY = event.getRawY();
                         mViewX = mParams.x;
                         mViewY = mParams.y;
-                        Log.e("KCA", String.format("mView: %d %d", mViewX, mViewY));
+                        Log.e("KCA", KcaUtils.format("mView: %d %d", mViewX, mViewY));
                         startClickTime = Calendar.getInstance().getTimeInMillis();
                         mHandler.postDelayed(mRunnable, LONG_CLICK_DURATION);
                         break;
@@ -394,11 +399,23 @@ public class KcaViewButtonService extends Service {
                         mView.getLocationOnScreen(locations);
                         int xx = locations[0];
                         int yy = locations[1];
-                        Log.e("KCA", String.format("Coord: %d %d", xx, yy));
+                        Log.e("KCA", KcaUtils.format("Coord: %d %d", xx, yy));
                         if (mParams.x < 0) mParams.x = 0;
-                        else if (mParams.x > screenWidth - buttonWidth) mParams.x = screenWidth - buttonWidth;
+                        else if (mParams.x > screenWidth - buttonWidth)
+                            mParams.x = screenWidth - buttonWidth;
                         if (mParams.y < 0) mParams.y = 0;
-                        else if (mParams.y > screenHeight - buttonHeight) mParams.y = screenHeight - buttonHeight;
+                        else if (mParams.y > screenHeight - buttonHeight)
+                            mParams.y = screenHeight - buttonHeight;
+
+                        JsonObject locdata = dbHelper.getJsonObjectValue(DB_KEY_FAIRYLOC);
+                        String ori_prefix = getOrientationPrefix(getResources().getConfiguration().orientation);
+                        if (locdata != null && locdata.toString().length() > 0) {
+                            locdata.addProperty(ori_prefix.concat("x"), mParams.x);
+                            locdata.addProperty(ori_prefix.concat("y"), mParams.y);
+                        } else {
+                            locdata = new JsonObject();
+                        }
+                        dbHelper.putValue(DB_KEY_FAIRYLOC, locdata.toString());
                         break;
 
                     case MotionEvent.ACTION_MOVE:
@@ -407,6 +424,10 @@ public class KcaViewButtonService extends Service {
 
                         mParams.x = mViewX + x;
                         mParams.y = mViewY + y;
+                        if (mParams.x < 0) mParams.x = 0;
+                        else if (mParams.x > screenWidth - buttonWidth) mParams.x = screenWidth - buttonWidth;
+                        if (mParams.y < 0) mParams.y = 0;
+                        else if (mParams.y > screenHeight - buttonWidth) mParams.y = screenHeight - buttonWidth;
                         mManager.updateViewLayout(mView, mParams);
                         if (Math.abs(x) > 20 || Math.abs(y) > 20) {
                             Log.e("KCA", "Callback Canceled");
@@ -437,41 +458,65 @@ public class KcaViewButtonService extends Service {
         public void run() {
             try {
                 fairy_glow_on = !fairy_glow_on;
-                setFairyGlow();
+                setFairyImage();
             } finally {
-                mHandler.postDelayed(mGlowRunner, FAIRY_GLOW_INTERVAL);
+                if (fairy_glow_mode) {
+                    mHandler.postDelayed(mGlowRunner, FAIRY_GLOW_INTERVAL);
+                } else {
+                    fairy_glow_on = false;
+                }
             }
         }
     };
 
     void startFairyKira() {
+        fairy_glow_mode = true;
         mGlowRunner.run();
     }
 
     void stopFairyKira() {
-        fairy_glow_on = false;
-        setFairyGlow();
-        mHandler.removeCallbacks(mGlowRunner);
+        fairy_glow_mode = false;
+        setFairyImage();
     }
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
+        String ori_prefix = getOrientationPrefix(newConfig.orientation);
         Display display = ((WindowManager) getApplicationContext().getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay();
         Point size = new Point();
         display.getSize(size);
         screenWidth = size.x;
         screenHeight = size.y;
-        Log.e("KCA", "w/h: "+String.valueOf(screenWidth) + " "  +String.valueOf(screenHeight));
+        Log.e("KCA", "w/h: " + String.valueOf(screenWidth) + " " + String.valueOf(screenHeight));
 
-        int totalWidth = buttonWidth;
-        int totalHeight = buttonHeight;
+        JsonObject locdata = null;
+        if (dbHelper != null) locdata = dbHelper.getJsonObjectValue(DB_KEY_FAIRYLOC);
 
-        if (mParams != null) {
-            if (mParams.x < 0) mParams.x = 0;
-            else if (mParams.x > screenWidth - totalWidth) mParams.x = screenWidth - totalWidth;
-            if (mParams.y < 0) mParams.y = 0;
-            else if (mParams.y > screenHeight - totalHeight) mParams.y = screenHeight - totalHeight;
+        if (locdata != null && locdata.toString().length() > 0) {
+            if (locdata.has(ori_prefix.concat("x"))) {
+                mParams.x = locdata.get(ori_prefix.concat("x")).getAsInt();
+            }
+            if (locdata.has(ori_prefix.concat("y"))) {
+                mParams.y = locdata.get(ori_prefix.concat("y")).getAsInt();
+            }
         }
+
+        if (mManager != null && mParams != null) {
+            if (mParams.x < 0) mParams.x = 0;
+            else if (mParams.x > screenWidth - buttonWidth) mParams.x = screenWidth - buttonWidth;
+            if (mParams.y < 0) mParams.y = 0;
+            else if (mParams.y > screenHeight - buttonHeight) mParams.y = screenHeight - buttonHeight;
+            mManager.updateViewLayout(mView, mParams);
+        }
+
+
+        if (locdata != null && locdata.toString().length() > 0) {
+            locdata.addProperty(ori_prefix.concat("x"), mParams.x);
+            locdata.addProperty(ori_prefix.concat("y"), mParams.y);
+        } else {
+            locdata = new JsonObject();
+        }
+        dbHelper.putValue(DB_KEY_FAIRYLOC, locdata.toString());
 
         super.onConfigurationChanged(newConfig);
     }
